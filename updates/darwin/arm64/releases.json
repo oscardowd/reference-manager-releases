@@ -1,6 +1,15 @@
 {
-  "url": "https://github.com/oscardowd/reference-manager-releases/releases/download/v0.1.0/Reference.Manager-0.1.0-arm64.zip",
-  "name": "0.1.0",
-  "notes": "Signed and notarised arm64 macOS release.",
-  "pub_date": "2026-08-25T20:02:00Z"
+  "currentRelease": "0.1.0",
+  "releases": [
+    {
+      "version": "0.1.0",
+      "updateTo": {
+        "version": "0.1.0",
+        "url": "https://github.com/oscardowd/reference-manager-releases/releases/download/v0.1.0/Reference.Manager-0.1.0-arm64.zip",
+        "name": "0.1.0",
+        "notes": "Signed and notarised arm64 macOS release.",
+        "pub_date": "2026-08-25T20:02:00Z"
+      }
+    }
+  ]
 }
