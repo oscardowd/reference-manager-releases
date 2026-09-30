@@ -1,0 +1,1294 @@
+/*
+ * The Word task pane (SPEC §9.1–9.4; E10-19.2).
+ *
+ * The same palette, accent and density as the desktop library (design-qa.md), because the two are
+ * one product seen from two windows: flat surfaces divided by hairlines, one saturated accent for
+ * the primary action and the current tab, and text colours that carry hierarchy on their own.
+ *
+ * Word gives a task pane roughly 320–380px and no chrome of its own, so the layout is a column:
+ * a header, three tabs, the tab's workflow, and — on the Cite tab — a tray pinned to the bottom
+ * that holds the citation being built. The list scrolls; the tray and the Insert button do not.
+ *
+ * No inline style anywhere (the pane's CSP-equivalent rule, ADR-0086), and no library string in a
+ * class or attribute (ADR-0084): everything below is keyed on product-authored classes and ids.
+ */
+:root {
+  color-scheme: light;
+  --surface: #ffffff;
+  --surface-soft: #f8f9fa;
+  --surface-sunken: #f1f3f4;
+  --ink: #202124;
+  --ink-soft: #5f6368;
+  /* 4.86:1 on white (§19). */
+  --ink-muted: #6d7276;
+  --line: #e8eaed;
+  --line-strong: #dadce0;
+  --accent: #316dca;
+  --accent-fill: #316dca;
+  --accent-fill-hover: #275ba9;
+  --accent-ink: #ffffff;
+  --accent-soft: #e9f1fc;
+  --accent-on-soft: #275ba9;
+  --success: #188038;
+  --danger: #c5221f;
+  --warning-soft: #fef7e0;
+  --warning-line: #f9d88c;
+  --warning-ink: #6b4b00;
+  --focus-ring: rgba(49, 109, 202, 0.4);
+  --shadow-tray: 0 -1px 0 var(--line), 0 -6px 16px rgba(60, 64, 67, 0.06);
+  --radius: 6px;
+  --radius-small: 4px;
+  /* How many lines a card's supporting label may wrap to before it is elided (c80c854). */
+  --card-label-lines: 3;
+  --icon-search: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f6368' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-4.2-4.2'/%3E%3C/svg%3E");
+  --mask-chevron-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  --mask-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+  --mask-up: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 15l6-6 6 6'/%3E%3C/svg%3E");
+  --mask-close: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M7 7l10 10M17 7L7 17'/%3E%3C/svg%3E");
+  --mask-info: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 11v6M12 7.5v.5'/%3E%3C/svg%3E");
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --surface: #202124;
+    --surface-soft: #282a2d;
+    --surface-sunken: #2d2f33;
+    --ink: #e8eaed;
+    --ink-soft: #bdc1c6;
+    --ink-muted: #9aa0a6;
+    --line: #3c4043;
+    --line-strong: #4d5156;
+    --accent: #8ab4f8;
+    --accent-fill: #3b6fc9;
+    --accent-fill-hover: #2f5ea8;
+    --accent-ink: #ffffff;
+    --accent-soft: #1f2c42;
+    --accent-on-soft: #a8c7fa;
+    --success: #81c995;
+    --danger: #f28b82;
+    --warning-soft: #3a3120;
+    --warning-line: #6b5a2a;
+    --warning-ink: #f6d58a;
+    --focus-ring: rgba(138, 180, 248, 0.5);
+    --shadow-tray: 0 -1px 0 var(--line), 0 -6px 16px rgba(0, 0, 0, 0.35);
+    --icon-search: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23bdc1c6' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-4.2-4.2'/%3E%3C/svg%3E");
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* `hidden` hides (UI portability row #39).
+ *
+ * The user-agent sheet's `[hidden] { display: none }` carries no specificity, so any declared
+ * `display` outranks it and an element toggled with `hidden` keeps its box, its tab stops and its
+ * place in the accessibility tree. Measured in headed Chromium against this stylesheet as it was,
+ * 75 of the 219 elements in the shipped document stayed visible when `hidden` was set. Stated once
+ * here, as the web shell has always stated it, rather than patched per element.
+ */
+[hidden] {
+  display: none !important;
+}
+
+body {
+  min-width: 280px;
+  margin: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+summary:focus-visible,
+[tabindex="-1"]:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * The frame: header, tabs, panels
+ * ------------------------------------------------------------------------------------------- */
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 12px;
+  background: var(--surface);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.brand-mark {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+}
+
+.brand-name {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.connection-banner {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  min-height: 22px;
+  max-width: 55%;
+  padding: 2px 9px 2px 8px;
+  border-radius: 11px;
+  background: var(--surface-sunken);
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.connection-banner span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A round indicator sized by its own box, with its halo drawn as a shadow that does not affect
+ * layout (80fe1c7). Measured headed: the halo stays inside the pill on both axes. */
+.status-dot {
+  flex: none;
+  box-sizing: border-box;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink-muted);
+  box-shadow: 0 0 0 3px rgba(109, 114, 118, 0.16);
+}
+
+.connection-banner-ready {
+  color: var(--success);
+}
+
+.connection-banner-ready .status-dot {
+  background: var(--success);
+  box-shadow: 0 0 0 3px rgba(24, 128, 56, 0.16);
+}
+
+.connection-banner-document {
+  background: var(--accent-soft);
+  color: var(--accent-on-soft);
+}
+
+.connection-banner-document .status-dot {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(49, 109, 202, 0.16);
+}
+
+.connection-banner-error {
+  background: var(--warning-soft);
+  color: var(--warning-ink);
+}
+
+.connection-banner-error .status-dot {
+  background: var(--danger);
+  box-shadow: 0 0 0 3px rgba(197, 34, 31, 0.16);
+}
+
+.tabs {
+  position: sticky;
+  top: 44px;
+  z-index: 3;
+  display: flex;
+  gap: 18px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.tab {
+  position: relative;
+  padding: 8px 0 9px;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: default;
+}
+
+.tab:hover {
+  color: var(--ink);
+}
+
+.tab[aria-selected="true"] {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.tab[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--accent-fill);
+}
+
+.panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.panel-document,
+.panel-help {
+  gap: 10px;
+  padding: 12px 12px 24px;
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * Controls
+ * ------------------------------------------------------------------------------------------- */
+input[type="text"],
+input[type="search"],
+select {
+  min-height: 32px;
+  padding: 5px 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+select {
+  padding-right: 26px;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink-soft) 50%),
+    linear-gradient(135deg, var(--ink-soft) 50%, transparent 50%);
+  background-position: calc(100% - 13px) 50%, calc(100% - 9px) 50%;
+  background-repeat: no-repeat;
+  background-size: 4px 4px, 4px 4px;
+}
+
+input[type="text"]:focus-visible,
+input[type="search"]:focus-visible,
+select:focus-visible {
+  border-color: var(--accent);
+  outline: 1px solid var(--accent);
+  outline-offset: -2px;
+}
+
+input::placeholder {
+  color: var(--ink-muted);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 6px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: default;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--surface-soft);
+}
+
+.button:disabled {
+  opacity: 0.5;
+}
+
+.button-primary {
+  border-color: var(--accent-fill);
+  background: var(--accent-fill);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.button-primary:hover:not(:disabled) {
+  border-color: var(--accent-fill-hover);
+  background: var(--accent-fill-hover);
+}
+
+.button-secondary {
+  background: var(--surface);
+}
+
+.button-danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.button-wide {
+  width: 100%;
+}
+
+.button-small {
+  min-height: 26px;
+  padding: 3px 10px;
+  font-size: 12px;
+}
+
+.link-button {
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: default;
+}
+
+.link-button:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.link-button:disabled {
+  color: var(--ink-muted);
+  opacity: 0.6;
+}
+
+.button-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.inline-status,
+.field-hint {
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.inline-status:empty {
+  display: none;
+}
+
+kbd {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 5px;
+  border: 1px solid var(--line-strong);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font: 600 11px/17px -apple-system, BlinkMacSystemFont, sans-serif;
+  text-align: center;
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * Cite: search, results, the selection tray
+ * ------------------------------------------------------------------------------------------- */
+.citation-workspace {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.search-block {
+  display: grid;
+  gap: 8px;
+  padding: 12px 12px 8px;
+}
+
+.search-row {
+  position: relative;
+  display: flex;
+}
+
+.search-row input {
+  width: 100%;
+  min-width: 0;
+  min-height: 34px;
+  padding-left: 32px;
+  background: var(--surface-soft);
+}
+
+.search-row::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  width: 15px;
+  height: 15px;
+  background: var(--icon-search) center / contain no-repeat;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* Search runs as the writer types; Enter still submits. The button stays for assistive
+ * technology and for a keyboard user who expects one, drawn as nothing. */
+.search-submit {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  border: 0;
+}
+
+/* After the shared field rules it has to beat (8fa32b7): same specificity, so order decides. */
+input.field--numeric { inline-size: calc(var(--field-digits, 4) * 1ch + 3.5em); max-inline-size: 100%; }
+
+.search-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.scope-label {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.scope-label select {
+  max-width: 100%;
+  min-height: 28px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  border-color: transparent;
+  background-color: var(--surface-sunken);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.search-options .link-button {
+  flex: none;
+}
+
+.list-status {
+  padding: 0 12px 6px;
+  color: var(--ink-muted);
+  font-size: 11px;
+}
+
+.reference-list {
+  flex: 1;
+  margin: 0;
+  padding: 0 0 8px;
+  list-style: none;
+}
+
+.reference-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 10px;
+  padding: 9px 12px 9px 12px;
+  border-top: 1px solid var(--line);
+}
+
+.reference-row:first-child {
+  border-top-color: transparent;
+}
+
+.reference-row:hover {
+  background: var(--surface-soft);
+}
+
+.reference-row-selected,
+.reference-row-selected:hover {
+  background: var(--accent-soft);
+  box-shadow: inset 2px 0 0 var(--accent-fill);
+}
+
+/* The checkbox is a real input, drawn as a box with a check mask, so a click, Space and a
+ * screen reader all reach the same control. */
+.reference-check {
+  display: flex;
+  padding-top: 1px;
+}
+
+.reference-check input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 4px;
+  background: var(--surface);
+  -webkit-appearance: none;
+  appearance: none;
+  display: grid;
+  place-items: center;
+}
+
+.reference-check input[type="checkbox"]:checked {
+  border-color: var(--accent-fill);
+  background: var(--accent-fill);
+}
+
+/* The tick exists only while the box is checked — never drawn and then hidden. */
+.reference-check input[type="checkbox"]:checked::after {
+  content: "";
+  width: 11px;
+  height: 11px;
+  background-color: var(--accent-ink);
+  -webkit-mask: var(--mask-check) center / contain no-repeat;
+  mask: var(--mask-check) center / contain no-repeat;
+}
+
+.reference-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 6px;
+  min-width: 0;
+}
+
+.reference-body > p {
+  grid-column: 1;
+}
+
+.reference-title {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.reference-creators,
+.reference-publication {
+  overflow: hidden;
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reference-publication {
+  color: var(--ink-muted);
+}
+
+.reference-badge {
+  justify-self: start;
+  margin-top: 4px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--surface-sunken);
+  color: var(--ink-soft);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.reference-disclose {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  width: 22px;
+  height: 22px;
+  margin: -2px -4px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 0;
+}
+
+.reference-disclose::before {
+  content: "";
+  display: block;
+  width: 15px;
+  height: 15px;
+  margin: auto;
+  background-color: currentColor;
+  -webkit-mask: var(--mask-info) center / contain no-repeat;
+  mask: var(--mask-info) center / contain no-repeat;
+}
+
+.reference-disclose:hover,
+.reference-disclose[aria-expanded="true"] {
+  background: var(--surface-sunken);
+  color: var(--ink);
+}
+
+.reference-details {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 3px 10px;
+  margin: 8px 0 2px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: 12px;
+}
+
+.reference-row-selected .reference-details {
+  background: var(--surface);
+}
+
+.reference-details dt {
+  color: var(--ink-muted);
+}
+
+.reference-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* The tray holds the citation being built. It is pinned to the bottom of the pane so the Insert
+ * button is always one click away, however long the list. */
+.tray {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow-tray);
+}
+
+.tray-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tray-heading h3 {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.count-pill {
+  white-space: nowrap;
+  padding: 0 7px;
+  border-radius: 9px;
+  background: var(--surface-sunken);
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.tray-clear {
+  margin-left: auto;
+}
+
+.draft-list {
+  display: grid;
+  gap: 4px;
+  max-height: 34vh;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.draft-list:empty,
+.notice-list:empty {
+  display: none;
+}
+
+.draft-entry {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+}
+
+/* A selected reference is named in two lines at most; its options open beneath it. */
+.draft-options > summary {
+  position: relative;
+  display: block;
+  min-height: 30px;
+  padding: 6px 26px 6px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  list-style: none;
+  cursor: default;
+}
+
+.draft-entry-label {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.draft-options > summary::-webkit-details-marker {
+  display: none;
+}
+
+.draft-entry-title {
+  overflow-wrap: anywhere;
+}
+
+.draft-options > summary::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  right: 9px;
+  width: 10px;
+  height: 10px;
+  background-color: var(--ink-soft);
+  -webkit-mask: var(--mask-chevron-down) center / contain no-repeat;
+  mask: var(--mask-chevron-down) center / contain no-repeat;
+  transition: transform 140ms ease;
+}
+
+.draft-options[open] > summary::after {
+  transform: rotate(180deg);
+}
+
+.draft-entry-controls,
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.draft-entry-controls {
+  padding: 4px 8px 8px;
+}
+
+.draft-field {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.draft-field-wide {
+  grid-column: 1 / -1;
+}
+
+.draft-field select,
+.draft-field input[type="text"] {
+  width: 100%;
+  min-width: 0;
+  min-height: 30px;
+  font-size: 12px;
+}
+
+/* The locator's label and value share one field. */
+.draft-field:has(select + input) {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 6px;
+}
+
+.draft-field:has(select + input) > span {
+  grid-column: 1 / -1;
+}
+
+.draft-entry-actions {
+  display: flex;
+  gap: 6px;
+  padding: 0 8px 8px;
+}
+
+.draft-entry-actions .button {
+  min-height: 26px;
+  padding: 3px 9px;
+  font-size: 12px;
+}
+
+.preview-block {
+  display: grid;
+  gap: 3px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+}
+
+.preview-label {
+  color: var(--ink-muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* The processor's text, verbatim (invariant 4), in a document face so it reads as it will in
+ * the manuscript rather than as interface copy. */
+.preview-text {
+  color: var(--ink);
+  font-family: "Times New Roman", Times, Georgia, serif;
+  font-size: 14px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.preview-text-stale {
+  color: var(--ink-muted);
+}
+
+.notice-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notice {
+  padding: 6px 8px;
+  border: 1px solid var(--warning-line);
+  border-radius: var(--radius-small);
+  background: var(--warning-soft);
+  color: var(--warning-ink);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+/* Information about the preview, not a problem with it. */
+.notice-quiet {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-muted);
+  font-size: 11.5px;
+}
+
+/* Nothing selected: the tray is a one-line hint, not an empty form. */
+.tray-hint {
+  display: none;
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+
+.tray:has(#citation-draft-entries:empty) .tray-hint {
+  display: block;
+}
+
+.tray:has(#citation-draft-entries:empty) .tray-heading,
+.tray:has(#citation-draft-entries:empty) .preview-block,
+.tray:has(#citation-draft-entries:empty) #citation-insert {
+  display: none;
+}
+
+.sheet {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.sheet-heading {
+  display: grid;
+  gap: 2px;
+}
+
+.sheet-heading h3 {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.sheet-subtitle {
+  overflow: hidden;
+  color: var(--ink-soft);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.confirm-row label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--warning-line);
+  border-radius: var(--radius);
+  background: var(--warning-soft);
+  color: var(--warning-ink);
+  font-size: 12px;
+}
+
+.confirm-row input {
+  margin: 2px 0 0;
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * Document and Help: cards
+ * ------------------------------------------------------------------------------------------- */
+.action-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.document-summary {
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.action-card {
+  display: grid;
+  gap: 10px;
+  min-height: 70px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.action-card select {
+  width: 100%;
+}
+
+.action-copy {
+  display: grid;
+  gap: 3px;
+}
+
+.action-copy strong {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* A card's supporting label wraps to a bound rather than being cut at one line (c80c854). */
+.action-copy small {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--card-label-lines);
+  line-clamp: var(--card-label-lines);
+}
+
+.confirm-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--warning-line);
+  border-radius: 8px;
+  background: var(--warning-soft);
+  color: var(--warning-ink);
+  font-size: 12px;
+}
+
+.tip-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 16px;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.tip-list strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* Adding a reference without the desktop (ADR-0242). Shown only in document mode; a disclosure
+ * like the Help tab's, because in a document that already cites what the writer needs it is a
+ * detour, not the task. Every target is at least 34px tall for touch (Word on iPad). */
+.add-reference {
+  margin: 0 12px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.add-reference > summary,
+.add-reference-manual > summary {
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 6px 10px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+}
+
+.add-reference > summary::-webkit-details-marker,
+.add-reference-manual > summary::-webkit-details-marker {
+  display: none;
+}
+
+.add-reference-form {
+  display: grid;
+  gap: 6px;
+  padding: 0 10px 8px;
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.lookup-row {
+  display: flex;
+  gap: 6px;
+}
+
+.lookup-row input {
+  flex: 1;
+  min-height: 34px;
+}
+
+.add-reference-manual {
+  padding: 0 0 4px;
+  border-top: 1px solid var(--line);
+}
+
+.add-reference-manual .field-grid {
+  padding: 0 10px 8px;
+}
+
+.add-reference textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 60px;
+  font-size: 12px;
+  resize: vertical;
+}
+
+.add-reference > .inline-status:not(:empty) {
+  padding: 0 10px 8px;
+}
+
+.support {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.support > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 40px;
+  padding: 8px 12px;
+  color: var(--ink);
+  font-weight: 600;
+  list-style: none;
+  cursor: default;
+}
+
+.support > summary::-webkit-details-marker {
+  display: none;
+}
+
+.support > summary::after {
+  content: "";
+  width: 10px;
+  height: 10px;
+  background-color: var(--ink-soft);
+  -webkit-mask: var(--mask-chevron-down) center / contain no-repeat;
+  mask: var(--mask-chevron-down) center / contain no-repeat;
+  transition: transform 140ms ease;
+}
+
+.support[open] > summary::after {
+  transform: rotate(180deg);
+}
+
+.support-content {
+  display: grid;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+.support-heading {
+  color: var(--ink-muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.host-details {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 3px 10px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.host-details dt {
+  color: var(--ink-muted);
+}
+
+.host-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11.5px;
+}
+
+th,
+td {
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+th {
+  color: var(--ink-muted);
+  font-weight: 600;
+}
+
+tr.supported td:last-child {
+  color: var(--success);
+}
+
+tr.unsupported td:last-child {
+  color: var(--danger);
+}
+
+pre {
+  max-height: 220px;
+  margin: 0;
+  padding: 8px;
+  overflow: auto;
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+  font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* The task pane has two intentional motion cues — smooth scrolling to a workflow and the
+ * disclosure chevrons — and both stop when the operating system asks for reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* Forced colours: every surface goes back to the system palette; the drawn masks are painted in
+ * the system's own text colour so a checkbox, a chevron and an info button stay visible. */
+@media (forced-colors: active) {
+  .reference-check input[type="checkbox"]:checked::after,
+  .draft-options > summary::after,
+  .support > summary::after,
+  .reference-disclose::before {
+    forced-color-adjust: none;
+    background-color: CanvasText;
+  }
+
+  .reference-row-selected,
+  .tab[aria-selected="true"] {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+}
+
+/* The support and privacy pages served beside the pane (ADR-0242 §7): a readable column. */
+.document-page {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.document-page h1 {
+  font-size: 20px;
+}
+
+.document-page h2 {
+  margin-top: 20px;
+  font-size: 15px;
+}
+
+.document-page li + li {
+  margin-top: 6px;
+}

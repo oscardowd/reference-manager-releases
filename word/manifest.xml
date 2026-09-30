@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<OfficeApp
+  xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+  xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+  xsi:type="TaskPaneApp">
+  <Id>515098c4-d500-4474-be1f-7ae39cb10a2c</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>Reference Manager</ProviderName>
+  <DefaultLocale>en-GB</DefaultLocale>
+  <DisplayName DefaultValue="Reference Manager"/>
+  <Description DefaultValue="Insert and manage citations from your Reference Manager library."/>
+  <IconUrl DefaultValue="https://oscardowd.github.io/reference-manager-releases/word/assets/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://oscardowd.github.io/reference-manager-releases/word/assets/icon-80.png"/>
+  <SupportUrl DefaultValue="https://oscardowd.github.io/reference-manager-releases/word/support.html"/>
+  <Hosts>
+    <Host Name="Document"/>
+  </Hosts>
+  <Requirements>
+    <Sets DefaultMinVersion="1.1">
+      <Set Name="WordApi" MinVersion="1.1"/>
+    </Sets>
+  </Requirements>
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://oscardowd.github.io/reference-manager-releases/word/taskpane.html"/>
+  </DefaultSettings>
+  <Permissions>ReadWriteDocument</Permissions>
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      <Host xsi:type="Document">
+        <Runtimes>
+          <Runtime resid="Taskpane.Url" lifetime="long"/>
+        </Runtimes>
+        <DesktopFormFactor>
+          <FunctionFile resid="Taskpane.Url"/>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <CustomTab id="RefMgr.Tab">
+              <Group id="RefMgr.Group">
+                <Label resid="Group.Label"/>
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16"/>
+                  <bt:Image size="32" resid="Icon.32"/>
+                  <bt:Image size="80" resid="Icon.80"/>
+                </Icon>
+                <Control xsi:type="Button" id="RefMgr.ShowReferenceManager">
+                  <Label resid="Cmd.ShowReferenceManager.Label"/>
+                  <Supertip>
+                    <Title resid="Cmd.ShowReferenceManager.Label"/>
+                    <Description resid="Cmd.ShowReferenceManager.Tip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16"/>
+                    <bt:Image size="32" resid="Icon.32"/>
+                    <bt:Image size="80" resid="Icon.80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>RefMgrTaskPane</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Url"/>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="RefMgr.InsertCitation">
+                  <Label resid="Cmd.InsertCitation.Label"/>
+                  <Supertip>
+                    <Title resid="Cmd.InsertCitation.Label"/>
+                    <Description resid="Cmd.InsertCitation.Tip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16"/>
+                    <bt:Image size="32" resid="Icon.32"/>
+                    <bt:Image size="80" resid="Icon.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>insertCitation</FunctionName>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="RefMgr.EditCitation">
+                  <Label resid="Cmd.EditCitation.Label"/>
+                  <Supertip>
+                    <Title resid="Cmd.EditCitation.Label"/>
+                    <Description resid="Cmd.EditCitation.Tip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16"/>
+                    <bt:Image size="32" resid="Icon.32"/>
+                    <bt:Image size="80" resid="Icon.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>editCitation</FunctionName>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="RefMgr.InsertBibliography">
+                  <Label resid="Cmd.InsertBibliography.Label"/>
+                  <Supertip>
+                    <Title resid="Cmd.InsertBibliography.Label"/>
+                    <Description resid="Cmd.InsertBibliography.Tip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16"/>
+                    <bt:Image size="32" resid="Icon.32"/>
+                    <bt:Image size="80" resid="Icon.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>insertBibliography</FunctionName>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="RefMgr.RefreshDocument">
+                  <Label resid="Cmd.RefreshDocument.Label"/>
+                  <Supertip>
+                    <Title resid="Cmd.RefreshDocument.Label"/>
+                    <Description resid="Cmd.RefreshDocument.Tip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16"/>
+                    <bt:Image size="32" resid="Icon.32"/>
+                    <bt:Image size="80" resid="Icon.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>refreshDocument</FunctionName>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="RefMgr.ChangeCitationStyle">
+                  <Label resid="Cmd.ChangeCitationStyle.Label"/>
+                  <Supertip>
+                    <Title resid="Cmd.ChangeCitationStyle.Label"/>
+                    <Description resid="Cmd.ChangeCitationStyle.Tip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16"/>
+                    <bt:Image size="32" resid="Icon.32"/>
+                    <bt:Image size="80" resid="Icon.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>openCitationStyle</FunctionName>
+                  </Action>
+                </Control>
+              </Group>
+              <Label resid="Tab.Label"/>
+            </CustomTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon.16" DefaultValue="https://oscardowd.github.io/reference-manager-releases/word/assets/icon-16.png"/>
+        <bt:Image id="Icon.32" DefaultValue="https://oscardowd.github.io/reference-manager-releases/word/assets/icon-32.png"/>
+        <bt:Image id="Icon.80" DefaultValue="https://oscardowd.github.io/reference-manager-releases/word/assets/icon-80.png"/>
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://oscardowd.github.io/reference-manager-releases/word/taskpane.html"/>
+        <bt:Url id="Commands.Url" DefaultValue="https://oscardowd.github.io/reference-manager-releases/word/commands.html"/>
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="Tab.Label" DefaultValue="Reference Manager"/>
+        <bt:String id="Group.Label" DefaultValue="Reference Manager"/>
+        <bt:String id="Cmd.ShowReferenceManager.Label" DefaultValue="Open pane"/>
+        <bt:String id="Cmd.InsertCitation.Label" DefaultValue="Insert citation"/>
+        <bt:String id="Cmd.EditCitation.Label" DefaultValue="Edit citation"/>
+        <bt:String id="Cmd.InsertBibliography.Label" DefaultValue="Insert bibliography"/>
+        <bt:String id="Cmd.RefreshDocument.Label" DefaultValue="Refresh document"/>
+        <bt:String id="Cmd.ChangeCitationStyle.Label" DefaultValue="Citation style"/>
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="Cmd.ShowReferenceManager.Tip" DefaultValue="Open the Reference Manager task pane"/>
+        <bt:String id="Cmd.InsertCitation.Tip" DefaultValue="Search the library and insert a citation"/>
+        <bt:String id="Cmd.EditCitation.Tip" DefaultValue="Edit the citation at the cursor"/>
+        <bt:String id="Cmd.InsertBibliography.Tip" DefaultValue="Insert a bibliography for the document's citations"/>
+        <bt:String id="Cmd.RefreshDocument.Tip" DefaultValue="Re-render every citation and the bibliography"/>
+        <bt:String id="Cmd.ChangeCitationStyle.Tip" DefaultValue="Change the document's citation style"/>
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+  <ExtendedOverrides Url="https://oscardowd.github.io/reference-manager-releases/word/shortcuts.json"/>
+</OfficeApp>

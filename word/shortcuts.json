@@ -1,0 +1,18 @@
+{
+  "actions": [
+    {
+      "id": "OpenInsertCitation",
+      "type": "ExecuteFunction",
+      "name": "Open the Reference Manager citation picker"
+    }
+  ],
+  "shortcuts": [
+    {
+      "action": "OpenInsertCitation",
+      "key": {
+        "default": "Ctrl+Alt+R",
+        "mac": "Command+Option+R"
+      }
+    }
+  ]
+}

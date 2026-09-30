@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Reference Manager for Word</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./taskpane.css" />
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+    <!--
+      The citation runtime's module specifiers (ADR-0242 decision 3). Data, not script: it tells the
+      browser where `@refmgr/*` and the unmodified third-party modules are served. It must equal what
+      `npm run addin:build` emits — the build refuses to finish otherwise — so edit it only alongside
+      apps/word-taskpane/tsconfig.runtime.json or a dependency change.
+    -->
+    <script type="importmap">
+      {
+        "imports": {
+          "@nodable/entities": "./vendor/@nodable/entities/src/index.js",
+          "@refmgr/bridge": "./runtime/packages/bridge/src/word-runtime.js",
+          "@refmgr/citation": "./runtime/packages/citation/src/word-runtime.js",
+          "@refmgr/core": "./runtime/packages/core/src/word-runtime.js",
+          "@refmgr/doc-schema": "./runtime/packages/doc-schema/src/index.js",
+          "@refmgr/identifiers": "./runtime/packages/identifiers/src/word-runtime.js",
+          "anynum": "./vendor/anynum/anynum.js",
+          "citeproc": "./runtime-citeproc.js",
+          "fast-xml-builder": "./vendor/fast-xml-builder/src/fxb.js",
+          "fast-xml-parser": "./vendor/fast-xml-parser/src/fxp.js",
+          "is-unsafe": "./vendor/is-unsafe/src/index.js",
+          "path-expression-matcher": "./vendor/path-expression-matcher/src/index.js",
+          "strnum": "./vendor/strnum/strnum.js",
+          "xml-naming": "./vendor/xml-naming/src/index.js"
+        }
+      }
+    </script>
+    <script type="module" src="./taskpane.js"></script>
+  </head>
+  <!--
+    The task pane (SPEC §9.1–9.4; E10-19.2). Three tabs, each a workflow that reaches the desktop
+    library through the live Word session:
+
+    - Cite: search, tick, preview, insert — and edit the citation at the cursor.
+    - Document: the document's citation style, its bibliography, and updating both.
+    - Help: the connection, the shortcut, and the support report.
+
+    The five tools whose bridges the live session does not carry yet (PDF excerpt, document check,
+    link repair, submission copy, collaborator review) stay in the document, hidden, because their
+    surfaces mount against these elements — but none is offered: a control that leads nowhere is
+    worse than one route honestly offered, and the installed ribbon omits them for the same reason.
+  -->
+  <body>
+    <main class="app">
+      <header class="app-header">
+        <div class="brand">
+          <img class="brand-mark" src="./assets/icon-80.png" alt="" width="20" height="20" />
+          <span class="brand-name">Reference Manager</span>
+        </div>
+        <div id="connection-status" class="connection-banner connection-banner-pending" role="status">
+          <span class="status-dot" aria-hidden="true"></span><span>Connecting…</span>
+        </div>
+      </header>
+
+      <div class="tabs" role="tablist" aria-label="Reference Manager">
+        <button type="button" class="tab" role="tab" id="tab-cite" aria-controls="panel-cite" aria-selected="true">Cite</button>
+        <button type="button" class="tab" role="tab" id="tab-document" aria-controls="panel-document" aria-selected="false" tabindex="-1">Document</button>
+        <button type="button" class="tab" role="tab" id="tab-help" aria-controls="panel-help" aria-selected="false" tabindex="-1">Help</button>
+      </div>
+      <p id="status" class="sr-only" role="status">Waiting for Word…</p>
+
+      <section id="panel-cite" class="panel panel-cite" role="tabpanel" aria-labelledby="tab-cite">
+        <section id="insert-citation" class="citation-workspace" aria-labelledby="insert-heading">
+          <h2 id="insert-heading" class="sr-only">Insert citation</h2>
+          <form id="citation-search-form" class="search-block" role="search">
+            <label class="sr-only" for="citation-search-query">Search your library</label>
+            <div class="search-row">
+              <input id="citation-search-query" name="q" type="search" autocomplete="off" spellcheck="false" placeholder="Search your library" />
+              <button class="search-submit" type="submit"><span class="sr-only">Search</span></button>
+            </div>
+            <div class="search-options">
+              <label class="scope-label" for="citation-scope">
+                <span class="sr-only">Collection</span>
+                <select id="citation-scope" name="collection"><option value="">All references</option></select>
+              </label>
+              <button id="citation-edit-open" class="link-button" type="button" title="Click a citation in your document first">Edit citation at cursor</button>
+            </div>
+          </form>
+          <details id="add-reference" class="add-reference" hidden>
+            <summary>Add a reference</summary>
+            <form id="add-reference-lookup" class="add-reference-form">
+              <label for="add-reference-identifier">DOI or PMID</label>
+              <div class="lookup-row">
+                <input id="add-reference-identifier" name="identifier" type="text" autocomplete="off" spellcheck="false" placeholder="e.g. 10.1038/nature12373 or PMID 31452104" />
+                <button class="button button-secondary" type="submit">Look up</button>
+              </div>
+              <p id="add-reference-disclosure" class="field-hint"></p>
+            </form>
+            <details id="add-reference-manual" class="add-reference-manual">
+              <summary>Enter the details yourself</summary>
+              <form id="add-reference-manual-form" class="field-grid">
+                <label class="draft-field draft-field-wide" for="add-reference-type">
+                  <span>Type</span>
+                  <select id="add-reference-type">
+                    <option value="article-journal">Journal article</option>
+                    <option value="book">Book</option>
+                    <option value="chapter">Book chapter</option>
+                    <option value="report">Report</option>
+                    <option value="thesis">Thesis</option>
+                    <option value="webpage">Web page</option>
+                  </select>
+                </label>
+                <label class="draft-field draft-field-wide" for="add-reference-title">
+                  <span>Title</span>
+                  <input id="add-reference-title" type="text" autocomplete="off" />
+                </label>
+                <label class="draft-field draft-field-wide" for="add-reference-authors">
+                  <span>Authors, one per line as Family, Given</span>
+                  <textarea id="add-reference-authors" rows="3" autocomplete="off"></textarea>
+                </label>
+                <label class="draft-field" for="add-reference-year">
+                  <span>Year</span>
+                  <input id="add-reference-year" type="text" autocomplete="off" />
+                </label>
+                <label class="draft-field" for="add-reference-container">
+                  <span>Journal or book</span>
+                  <input id="add-reference-container" type="text" autocomplete="off" />
+                </label>
+                <label class="draft-field" for="add-reference-volume">
+                  <span>Volume</span>
+                  <input id="add-reference-volume" type="text" autocomplete="off" />
+                </label>
+                <label class="draft-field" for="add-reference-pages">
+                  <span>Pages</span>
+                  <input id="add-reference-pages" type="text" autocomplete="off" />
+                </label>
+                <label class="draft-field" for="add-reference-publisher">
+                  <span>Publisher</span>
+                  <input id="add-reference-publisher" type="text" autocomplete="off" />
+                </label>
+                <label class="draft-field" for="add-reference-doi">
+                  <span>DOI</span>
+                  <input id="add-reference-doi" type="text" autocomplete="off" spellcheck="false" />
+                </label>
+                <div class="button-row draft-field-wide">
+                  <button class="button button-secondary" type="submit">Add reference</button>
+                </div>
+              </form>
+            </details>
+            <p id="add-reference-status" class="inline-status" role="status"></p>
+          </details>
+          <p id="citation-picker-status" class="list-status" role="status">Connecting to your library…</p>
+          <ul id="citation-results" class="reference-list" aria-label="References"></ul>
+        </section>
+
+        <section id="citation-edit" class="sheet" aria-labelledby="citation-edit-heading" hidden>
+          <div class="sheet-heading">
+            <h3 id="citation-edit-heading">Edit citation</h3>
+            <span id="citation-edit-target" class="sheet-subtitle"></span>
+          </div>
+          <div class="preview-block">
+            <p class="preview-label">Preview</p>
+            <p id="citation-edit-preview" class="preview-text"></p>
+          </div>
+          <ul id="citation-edit-notices" class="notice-list"></ul>
+          <form id="citation-edit-form" class="field-grid">
+            <label class="draft-field draft-field-wide" for="citation-edit-display">
+              <span>Display as</span>
+              <select id="citation-edit-display"></select>
+            </label>
+            <label class="draft-field" for="citation-edit-locator-label">
+              <span>Locator</span>
+              <select id="citation-edit-locator-label"></select>
+            </label>
+            <label class="draft-field" for="citation-edit-locator-value">
+              <span>Value</span>
+              <input id="citation-edit-locator-value" type="text" autocomplete="off" placeholder="e.g. 12–14" />
+            </label>
+            <label class="draft-field" for="citation-edit-prefix">
+              <span>Prefix</span>
+              <input id="citation-edit-prefix" type="text" autocomplete="off" placeholder="e.g. see" />
+            </label>
+            <label class="draft-field" for="citation-edit-suffix">
+              <span>Suffix</span>
+              <input id="citation-edit-suffix" type="text" autocomplete="off" placeholder="e.g. for a review" />
+            </label>
+            <div id="citation-edit-accept-row" class="confirm-row draft-field-wide" hidden>
+              <label for="citation-edit-accept">
+                <input id="citation-edit-accept" type="checkbox" />
+                Replace the wording that was typed into this citation by hand.
+              </label>
+            </div>
+          </form>
+          <p id="citation-edit-status" class="inline-status" role="status"></p>
+          <div class="button-row">
+            <button id="citation-edit-cancel" class="button button-secondary" type="button">Cancel</button>
+            <button id="citation-edit-save" class="button button-primary" type="button" disabled>Save changes</button>
+          </div>
+        </section>
+
+        <section id="citation-tray" class="tray" aria-labelledby="citation-draft-heading">
+          <p class="tray-hint">Tick references to cite them together.</p>
+          <div class="tray-heading">
+            <h3 id="citation-draft-heading">Selected</h3>
+            <span id="citation-draft-count" class="count-pill">0 in this citation</span>
+            <button id="citation-clear" class="link-button tray-clear" type="button" disabled>Clear</button>
+          </div>
+          <ol id="citation-draft-entries" class="draft-list"></ol>
+          <ul id="citation-draft-notices" class="notice-list"></ul>
+          <div class="preview-block">
+            <p class="preview-label">Preview</p>
+            <p id="citation-preview" class="preview-text">Select a reference to preview the citation.</p>
+            <ul id="citation-preview-warnings" class="notice-list"></ul>
+          </div>
+          <button id="citation-insert" class="button button-primary button-wide" type="button" disabled>Insert citation</button>
+        </section>
+      </section>
+
+      <section id="panel-document" class="panel panel-document" role="tabpanel" aria-labelledby="tab-document" hidden>
+        <section id="document-update" class="action-grid" aria-labelledby="document-heading">
+          <h2 id="document-heading" class="sr-only">Document</h2>
+          <p id="document-summary" class="document-summary">Open a document to see its citations.</p>
+
+          <article class="action-card" aria-labelledby="style-card-heading">
+            <div class="action-copy">
+              <strong id="style-card-heading">Citation style</strong>
+              <small>Applies to every citation and the bibliography in this document.</small>
+            </div>
+            <label class="sr-only" for="citation-style">Citation style</label>
+            <select id="citation-style" aria-label="Citation style"></select>
+            <p id="style-card-note" class="field-hint" hidden></p>
+            <button id="document-style-apply" class="button button-secondary button-wide" type="button" disabled>Apply style</button>
+          </article>
+
+          <article class="action-card" aria-labelledby="bibliography-card-heading">
+            <div class="action-copy">
+              <strong id="bibliography-card-heading">Bibliography</strong>
+              <small id="bibliography-card-note">Inserted at the cursor. Put the cursor where the list should go, usually the end of the document.</small>
+            </div>
+            <button id="document-bibliography" class="button button-secondary button-wide" type="button" disabled>Insert bibliography</button>
+          </article>
+
+          <article class="action-card" aria-labelledby="update-card-heading">
+            <div class="action-copy">
+              <strong id="update-card-heading">Update citations</strong>
+              <small>Re-formats every citation and the bibliography, and renumbers numeric styles.</small>
+            </div>
+            <button id="document-refresh" class="button button-secondary button-wide" type="button" disabled>Update document</button>
+          </article>
+
+          <div id="document-confirm" class="confirm-card" role="alertdialog" aria-labelledby="document-confirm-message" hidden>
+            <p id="document-confirm-message"></p>
+            <div class="button-row">
+              <button id="document-confirm-cancel" class="button button-secondary" type="button">Cancel</button>
+              <button id="document-confirm-accept" class="button button-primary" type="button">Continue</button>
+            </div>
+          </div>
+          <p id="document-status" class="inline-status" role="status"></p>
+        </section>
+      </section>
+
+      <section id="panel-help" class="panel panel-help" role="tabpanel" aria-labelledby="tab-help" hidden>
+        <article id="connection-panel" class="action-card" aria-labelledby="bridge-heading">
+          <div class="action-copy">
+            <strong id="bridge-heading">Desktop app</strong>
+            <small id="bridge-description">This pane reads your library from Reference Manager on this computer. Keep it open while you write.</small>
+          </div>
+          <form id="bridge-form" class="button-row">
+            <button class="button button-secondary" type="submit">Reconnect</button>
+          </form>
+          <p id="bridge-result" class="inline-status" role="status"></p>
+        </article>
+
+        <article class="action-card" aria-labelledby="tips-heading">
+          <div class="action-copy">
+            <strong id="tips-heading">Working with citations</strong>
+            <small>Tick references to group them in one citation. Open a selected reference for page numbers, a prefix or a suffix.</small>
+          </div>
+          <ul class="tip-list">
+            <li id="citation-shortcut" tabindex="-1">Open the search with <kbd>⌘⌥R</kbd> on Mac or <kbd>Ctrl Alt R</kbd> on Windows.</li>
+            <li>To change a citation, click it in the document, then choose <strong>Edit citation at cursor</strong>.</li>
+            <li>After deleting or moving citations, choose <strong>Update document</strong> on the Document tab.</li>
+          </ul>
+        </article>
+
+        <details id="environment-panel" class="support">
+          <summary>Support information</summary>
+          <section class="support-content" aria-labelledby="host-heading">
+            <h2 id="host-heading" class="support-heading">Environment</h2>
+            <dl id="host" class="host-details"></dl>
+            <h3 class="support-heading">Word capabilities</h3>
+            <table id="sets">
+              <thead>
+                <tr><th scope="col">Set</th><th scope="col">Version</th><th scope="col">Supported</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </section>
+          <section class="support-content" aria-labelledby="report-heading">
+            <div class="report-heading-row">
+              <h2 id="report-heading" class="support-heading">Support report</h2>
+              <button id="copy" class="button button-secondary button-small" type="button">Copy</button>
+            </div>
+            <p class="field-hint">Copy this when reporting a Word problem. It holds no reference or document text.</p>
+            <pre id="report" tabindex="0"></pre>
+          </section>
+          <section class="support-content" aria-labelledby="credits-heading">
+            <h2 id="credits-heading" class="support-heading">Credits</h2>
+            <p class="field-hint">Powered by citeproc-js — Copyright © 2009–2019 Frank Bennett. Citation styles and locales are by the Citation Style Language project and their authors (CC BY-SA 3.0).</p>
+            <p class="field-hint"><a href="./third-party-notices.txt" target="_blank" rel="noopener">Third-party notices</a></p>
+          </section>
+        </details>
+      </section>
+
+      <!--
+        Tools the live Word session cannot reach yet. Mounted, never shown; see the note at the top.
+      -->
+      <div id="unavailable-tools" hidden>
+        <section id="annotation-picker" aria-labelledby="annotation-heading">
+          <h2 id="annotation-heading">Insert PDF excerpt</h2>
+          <form id="annotation-search-form" class="search-form">
+            <label for="annotation-search-query">Search saved annotations</label>
+            <div class="search-row">
+              <input id="annotation-search-query" name="q" type="search" autocomplete="off" />
+              <button class="button button-primary" type="submit">Search annotations</button>
+            </div>
+          </form>
+          <p id="annotation-picker-status" class="inline-status" role="status"></p>
+          <ul id="annotation-search-results" class="result-list"></ul>
+          <div id="annotation-page-label-row" class="field-row" hidden>
+            <label for="annotation-page-label">Printed page label</label>
+            <input id="annotation-page-label" name="pageLabel" type="text" autocomplete="off" />
+          </div>
+          <ul id="annotation-omissions"></ul>
+          <button id="annotation-insert" class="button button-primary" type="button" disabled>Insert excerpt and citation</button>
+        </section>
+        <section id="document-diagnostics" aria-labelledby="diagnostics-heading">
+          <h2 id="diagnostics-heading">Check document</h2>
+        </section>
+        <section id="document-repair" aria-labelledby="repair-heading">
+          <h2 id="repair-heading">Repair citation links</h2>
+          <p id="document-repair-status" class="inline-status" role="status"></p>
+        </section>
+        <section id="document-unlink" aria-labelledby="unlink-heading">
+          <h2 id="unlink-heading">Prepare submission</h2>
+          <form id="document-unlink-form" class="stacked-form">
+            <label for="unlink-mode">Workflow</label>
+            <select id="unlink-mode" name="mode">
+              <option value="unlink">Unlink selected parts</option>
+              <option value="convert-to-plain-text">Convert everything to plain text</option>
+            </select>
+            <label><input id="unlink-citations" type="checkbox" checked /> Unlink citations</label>
+            <label><input id="unlink-bibliography" type="checkbox" checked /> Unlink bibliography</label>
+            <label><input id="unlink-retain-recovery" type="checkbox" /> Retain hidden recovery metadata</label>
+            <button class="button button-secondary" type="submit">Review submission plan</button>
+          </form>
+          <p id="unlink-status" class="inline-status" role="status"></p>
+          <ul id="unlink-refusals"></ul>
+          <ul id="unlink-warnings"></ul>
+          <button id="unlink-commit" class="button button-danger" type="button" disabled>Save linked copy and unlink</button>
+          <ul id="unlink-checklist"></ul>
+        </section>
+        <section id="collaboration-review" aria-labelledby="collaboration-heading">
+          <h2 id="collaboration-heading">Review collaborator references</h2>
+          <p id="collaboration-status" class="inline-status" role="status"></p>
+          <ul id="collaboration-imports"></ul>
+          <ul id="collaboration-candidates"></ul>
+          <div id="collaboration-comparisons"></div>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

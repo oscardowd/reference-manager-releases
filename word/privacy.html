@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Reference Manager for Word — Privacy</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./taskpane.css" />
+  </head>
+  <!--
+    What the add-in sends and keeps (ADR-0242 §7; store policy 1100.5). Every statement here is
+    held to the code by apps/word-taskpane/src/pages.test.ts: a host the pane contacts and this page
+    does not name fails the suite. Wording is a factual draft awaiting the legal review R-015 names.
+  -->
+  <body>
+    <main class="app document-page">
+      <h1>Privacy</h1>
+      <p>Reference Manager for Word inserts and formats citations in the document you have open. It has no account, no analytics and no advertising, and it does not send your document anywhere.</p>
+
+      <h2>What stays on your device</h2>
+      <ul>
+        <li>Your citations and the copy of each cited reference are stored inside your Word document, as Word stores any other document content.</li>
+        <li>References you add in the pane, and citation styles it has downloaded, are kept in this add-in's own storage on this device so they are there next time. Removing the add-in's data in Word removes them.</li>
+        <li>When the Reference Manager desktop app runs on this computer, the pane talks to it directly on this computer (<code>localhost</code>). Nothing in that exchange leaves your computer.</li>
+      </ul>
+
+      <h2>What the pane sends, and to whom</h2>
+      <ul>
+        <li><strong>Microsoft</strong> (<code>appsforoffice.microsoft.com</code>): Word loads Microsoft's Office.js library for every add-in.</li>
+        <li><strong>The Citation Style Language project, on GitHub</strong> (<code>raw.githubusercontent.com</code>): the first time a citation style or language is needed without the desktop app, its file is downloaded. The request names the style file and nothing else.</li>
+        <li><strong>Metadata services</strong>, only when you choose <em>Look up</em> and only the identifier you typed: a DOI to Crossref (<code>api.crossref.org</code>) and DataCite (<code>api.datacite.org</code>); a PMID or PMCID to the US National Library of Medicine (<code>eutils.ncbi.nlm.nih.gov</code>); an ISBN to Open Library (<code>openlibrary.org</code>); a clinical-trial number to ClinicalTrials.gov (<code>clinicaltrials.gov</code>).</li>
+      </ul>
+      <p>These requests carry no cookies and no referring page. Each service receives your network address, as any web request does, under its own privacy policy.</p>
+
+      <h2>Questions</h2>
+      <p>Use the support contact shown on this add-in's store listing.</p>
+      <p class="field-hint">Last updated 30 September 2026.</p>
+    </main>
+  </body>
+</html>

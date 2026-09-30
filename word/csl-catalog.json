@@ -1,0 +1,188 @@
+{
+  "generatedBy": "npm run addin:csl-catalog",
+  "licence": "CSL styles and locales are CC-BY-SA-3.0, by the Citation Style Language project and their authors; fetched unmodified at run time",
+  "styles": {
+    "repository": "https://github.com/citation-style-language/styles",
+    "revision": "794ede58a74abad86328f0d8b8aa8bfa02501679",
+    "base": "https://raw.githubusercontent.com/citation-style-language/styles/794ede58a74abad86328f0d8b8aa8bfa02501679/",
+    "entries": [
+      {
+        "id": "http://www.zotero.org/styles/american-medical-association",
+        "title": "AMA Manual of Style 11th edition",
+        "file": "american-medical-association.csl",
+        "sha256": "a05c1099933b9ef264e140af0d38efcaa2d92c84646a1aa888e37ed62905817a",
+        "className": "in-text",
+        "citationFormat": "numeric"
+      },
+      {
+        "id": "http://www.zotero.org/styles/apa",
+        "title": "APA Style 7th edition",
+        "file": "apa.csl",
+        "sha256": "17bc430cf931767d551a894129b3a705e1feee91090295c09674e370ccdef5d9",
+        "className": "in-text",
+        "citationFormat": "author-date"
+      },
+      {
+        "id": "http://www.zotero.org/styles/bmj",
+        "title": "BMJ",
+        "file": "bmj.csl",
+        "sha256": "8149cfcb70ab9e7aebfeef5bf8a7318d5c0af124a10ac7d5d6ed9c015dfe82e5",
+        "className": "in-text",
+        "citationFormat": "numeric"
+      },
+      {
+        "id": "http://www.zotero.org/styles/cell",
+        "title": "Cell",
+        "file": "cell.csl",
+        "sha256": "8c02f186709cd105cf2a6a09c51f5d3d9aacf9d788158f48b2cb16e1e8a562c1",
+        "className": "in-text",
+        "citationFormat": "numeric"
+      },
+      {
+        "id": "http://www.zotero.org/styles/chicago-author-date",
+        "title": "Chicago Manual of Style 18th edition (author-date)",
+        "file": "chicago-author-date.csl",
+        "sha256": "635db8db1d0feca7fae37999470f0b56b51c208a71482e5ff4c45c30bdfb32bf",
+        "className": "in-text",
+        "citationFormat": "author-date"
+      },
+      {
+        "id": "http://www.zotero.org/styles/harvard-cite-them-right",
+        "title": "Cite Them Right 12th edition (author-date/Harvard)",
+        "file": "harvard-cite-them-right.csl",
+        "sha256": "6053e3448b5e7da4a814f2a8610c1bf29cc5a243c24c9e2e5c3e7cd225230df7",
+        "className": "in-text",
+        "citationFormat": "author-date"
+      },
+      {
+        "id": "http://www.zotero.org/styles/elsevier-vancouver",
+        "title": "Elsevier - NLM/Vancouver (citation-sequence)",
+        "file": "elsevier-vancouver.csl",
+        "sha256": "710f2b693afe75733212f38808d08d2efb5bcb017e1f67f698ab8fefc31d105d",
+        "className": "in-text",
+        "citationFormat": "numeric"
+      },
+      {
+        "id": "http://www.zotero.org/styles/elsevier-harvard",
+        "title": "Elsevier (author-date/Harvard, with titles)",
+        "file": "elsevier-harvard.csl",
+        "sha256": "e1c7bfee0efd581bb7745059f1c29aef6a8b10578511f3d179db9bbec2878e81",
+        "className": "in-text",
+        "citationFormat": "author-date"
+      },
+      {
+        "id": "http://www.zotero.org/styles/ieee",
+        "title": "IEEE Reference Guide version 11.29.2023",
+        "file": "ieee.csl",
+        "sha256": "6dee2b87ce90a7ab86f232d78a9216f47adc6193f13b6307b4a83c65594e721a",
+        "className": "in-text",
+        "citationFormat": "numeric"
+      },
+      {
+        "id": "http://www.zotero.org/styles/modern-language-association",
+        "title": "MLA Handbook 9th edition (in-text citations)",
+        "file": "modern-language-association.csl",
+        "sha256": "ad5398ee478760737ad04ec6f95ead6dfbea7d2ae5252fc21f337110dd564b58",
+        "className": "in-text",
+        "citationFormat": "author"
+      },
+      {
+        "id": "http://www.zotero.org/styles/nature",
+        "title": "Nature",
+        "file": "nature.csl",
+        "sha256": "e116b768c0f9d6e477704c59aee323cf49b7f279add18340c35cfdacb50964f6",
+        "className": "in-text",
+        "citationFormat": "numeric"
+      },
+      {
+        "id": "http://www.zotero.org/styles/nlm-citation-sequence",
+        "title": "NLM/Vancouver: Citing Medicine 2nd edition (citation-sequence)",
+        "file": "nlm-citation-sequence.csl",
+        "sha256": "42759650b00306c02aa5786db843c8ed67128a86b2ec0a1825a1f4e6387d51cc",
+        "className": "in-text",
+        "citationFormat": "numeric"
+      },
+      {
+        "id": "http://www.zotero.org/styles/plos",
+        "title": "Public Library of Science",
+        "file": "plos.csl",
+        "sha256": "531629af34c219800ee212d99bc39c1de37aeeee04a49d9fa2babf6a60c8a254",
+        "className": "in-text",
+        "citationFormat": "numeric"
+      },
+      {
+        "id": "http://www.zotero.org/styles/the-lancet",
+        "title": "The Lancet",
+        "file": "the-lancet.csl",
+        "sha256": "327b4f4b08765ddc05a68cbaa1fe898442da9f0e669b0eae279cd75f631c412b",
+        "className": "in-text",
+        "citationFormat": "numeric"
+      },
+      {
+        "id": "http://www.zotero.org/styles/the-new-england-journal-of-medicine",
+        "title": "The New England Journal of Medicine",
+        "file": "the-new-england-journal-of-medicine.csl",
+        "sha256": "d6cd6c6fdd81d2faecba0bfac0bd76faaab63b6fd851dc383631eadb7fc28895",
+        "className": "in-text",
+        "citationFormat": "numeric"
+      }
+    ]
+  },
+  "locales": {
+    "repository": "https://github.com/citation-style-language/locales",
+    "revision": "ade2f38fcec56f86e20adb82d7b74abb2b1153f7",
+    "base": "https://raw.githubusercontent.com/citation-style-language/locales/ade2f38fcec56f86e20adb82d7b74abb2b1153f7/",
+    "entries": [
+      {
+        "lang": "de-DE",
+        "file": "locales-de-DE.xml",
+        "sha256": "41c1996ca238ffa23a20fcd5218cba227e6b30ae8d83dbd68cff56e54f2869ca"
+      },
+      {
+        "lang": "en-GB",
+        "file": "locales-en-GB.xml",
+        "sha256": "894d1a793b8d9e13d5db920eaeeaf95af339e51bcf601a22cba958aece85693f"
+      },
+      {
+        "lang": "en-US",
+        "file": "locales-en-US.xml",
+        "sha256": "6f2cd3d1d5527ff07a2981f7ec237753e3b6787568d053c08485802cc3d04ac0"
+      },
+      {
+        "lang": "es-ES",
+        "file": "locales-es-ES.xml",
+        "sha256": "1e0bd3a846b45108e4cc77fa11f302c39a22af72596fa1f2497016a2525335f3"
+      },
+      {
+        "lang": "fr-FR",
+        "file": "locales-fr-FR.xml",
+        "sha256": "3db97cc0276ef45463959d4158724dd3d55fe22d51a495c8e29ad9e449f1807f"
+      },
+      {
+        "lang": "it-IT",
+        "file": "locales-it-IT.xml",
+        "sha256": "a4da4f2cdf66e3be669b16976690d9e98c2189330382faecb07a172e98fbf436"
+      },
+      {
+        "lang": "ja-JP",
+        "file": "locales-ja-JP.xml",
+        "sha256": "39521cba447e6debaee24093ecd0329f2baa2e9db30b38242623a98bea496fb3"
+      },
+      {
+        "lang": "nl-NL",
+        "file": "locales-nl-NL.xml",
+        "sha256": "cb9eac5fdd441b1cd608b320d62ef715e16bd289a61c2150949852ae3525faf5"
+      },
+      {
+        "lang": "pt-BR",
+        "file": "locales-pt-BR.xml",
+        "sha256": "f4e11d2fe90c23c3398662a90138a45b4674bd8c88a03c2609e864449d108cd6"
+      },
+      {
+        "lang": "zh-CN",
+        "file": "locales-zh-CN.xml",
+        "sha256": "f63dd0134ccd95523b3bd5216c4f43e6542595a1fcef0390678aaf6a9df5e2ef"
+      }
+    ]
+  }
+}
