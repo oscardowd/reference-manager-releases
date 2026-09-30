@@ -10,7 +10,7 @@
   <ProviderName>Reference Manager</ProviderName>
   <DefaultLocale>en-GB</DefaultLocale>
   <DisplayName DefaultValue="Reference Manager"/>
-  <Description DefaultValue="Insert and manage citations from your Reference Manager library."/>
+  <Description DefaultValue="Insert citations and a bibliography, and look up references by DOI or PMID. Works on its own or with the Reference Manager app."/>
   <IconUrl DefaultValue="https://oscardowd.github.io/reference-manager-releases/word/assets/icon-32.png"/>
   <HighResolutionIconUrl DefaultValue="https://oscardowd.github.io/reference-manager-releases/word/assets/icon-80.png"/>
   <SupportUrl DefaultValue="https://oscardowd.github.io/reference-manager-releases/word/support.html"/>

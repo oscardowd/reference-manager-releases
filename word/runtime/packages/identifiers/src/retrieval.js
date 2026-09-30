@@ -107,11 +107,13 @@ function creators(value) {
         // Crossref spells it `ORCID`; DataCite and the others spell it `orcid`. Reading only one
         // spelling dropped the identifier from every Crossref creator.
         const orcid = asString(raw.orcid ?? raw.ORCID);
+        const suffix = asString(raw.suffix);
         result.push({
             ordinal,
             role: "author",
             ...(family === undefined ? {} : { family }),
             ...(given === undefined ? {} : { given }),
+            ...(suffix !== undefined && family !== undefined ? { suffix } : {}),
             ...(literal !== undefined && family === undefined && given === undefined ? { literal } : {}),
             ...(orcid === undefined ? {} : { orcid }),
         });
@@ -298,6 +300,42 @@ export class DataCiteSource extends JsonSource {
         }, payload);
     }
 }
+/**
+ * NLM's display name: the family name, then one to four capital initials, then an optional
+ * generational suffix — `Bitencourt-Ferreira G`, `de Azevedo WF Jr`, `Smith JA 3rd`.
+ *
+ * E-utilities' summary carries nothing else, and passing it through whole made every PubMed
+ * author a literal, which a style prints verbatim: APA rendered "(Bitencourt-Ferreira G & de
+ * Azevedo WF Jr, 2019)". The shape is regular enough to read exactly, so it is read exactly and
+ * nothing else is attempted: a collective name, a name with no initials, or an all-capitals
+ * "family" (`COG UK` is a consortium, not Mr COG) stays a literal rather than being guessed at.
+ */
+const NLM_AUTHOR_NAME = /^(\S.*?) (\p{Lu}{1,4})(?: (Jr|Sr|2nd|3rd|4th|5th|II|III|IV))?$/u;
+function pubMedAuthor(entry) {
+    if (!isRecord(entry))
+        return {};
+    const name = asString(entry.name);
+    if (name === undefined)
+        return {};
+    // `CollectiveName` is a group; only `Author` rows are people. A row without the field (older
+    // responses, fixtures) is read by its shape alone.
+    const authtype = asString(entry.authtype);
+    if (authtype !== undefined && authtype !== "Author")
+        return { name };
+    const match = NLM_AUTHOR_NAME.exec(name);
+    const family = match?.[1];
+    const initials = match?.[2];
+    if (family === undefined || initials === undefined || !/\p{Ll}/u.test(family))
+        return { name };
+    const suffix = match?.[3];
+    return {
+        family,
+        // `W. F.`, the form the creator-name repairs normalise to; a style's `initialize-with` then
+        // renders "W. F.", "W.F." or "WF" as it asks.
+        given: [...initials].map((letter) => `${letter}.`).join(" "),
+        ...(suffix === undefined ? {} : { suffix }),
+    };
+}
 export class PubMedSource extends JsonSource {
     id = "pubmed";
     supportedKinds = ["pmid", "pmcid"];
@@ -319,7 +357,7 @@ export class PubMedSource extends JsonSource {
             return undefined;
         const articleIds = Array.isArray(row.articleids) ? row.articleids : [];
         const doi = articleIds.find((entry) => isRecord(entry) && entry.idtype === "doi");
-        const authors = Array.isArray(row.authors) ? row.authors.map((entry) => isRecord(entry) ? { name: entry.name } : {}) : [];
+        const authors = Array.isArray(row.authors) ? row.authors.map(pubMedAuthor) : [];
         const pubdate = asString(row.pubdate);
         return candidate(this.id, identifier, identifier.value, retrievedAt, 0.95, {
             type: "article-journal",
